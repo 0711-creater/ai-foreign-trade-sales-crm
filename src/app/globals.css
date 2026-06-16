@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #f7fbfa;
+  color: #18181b;
+}
+
+/* 统一页面主要内容宽度，避免每个页面重复写 max-width。 */
+.container-page {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+/* 统一按钮基础样式，页面里只组合颜色即可。 */
+.btn-base {
+  @apply inline-flex items-center justify-center rounded-md px-5 py-3 text-sm font-semibold transition;
+}
