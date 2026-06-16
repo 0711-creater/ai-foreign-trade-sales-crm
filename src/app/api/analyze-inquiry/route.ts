@@ -283,7 +283,7 @@ async function saveAnalyzedInquiry(inquiryData: InquiryData, analysisResult: Inq
   const recordId = randomUUID();
 
   try {
-    await saveInquiryRecord({
+    return await saveInquiryRecord({
       id: recordId,
       createdAt: new Date().toISOString(),
       name: inquiryData.name,
@@ -309,11 +309,6 @@ async function saveAnalyzedInquiry(inquiryData: InquiryData, analysisResult: Inq
       status: "New",
       source: "Website Inquiry"
     });
-
-    return {
-      recordId,
-      saved: true
-    };
   } catch (error) {
     // 存储失败不应该阻断询盘分析结果返回，方便 MVP 演示时继续查看 AI 输出。
     console.error("Failed to save inquiry record:", error);

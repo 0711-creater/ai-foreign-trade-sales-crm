@@ -42,6 +42,7 @@ The project uses mirror products as the demo industry, but the workflow can be a
 - TypeScript
 - Tailwind CSS
 - DeepSeek API
+- Supabase
 - App Router API Routes
 - Local JSON storage
 - Mock fallback
@@ -79,11 +80,15 @@ Create a local `.env.local` file:
 DEEPSEEK_API_KEY=
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-flash
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
 ```
 
 Do not commit `.env.local` to GitHub.
 
 When `DEEPSEEK_API_KEY` is missing or the API call fails, the project automatically uses Mock fallback mode.
+
+`SUPABASE_SERVICE_ROLE_KEY` must only be used on the server side. Do not expose it in Client Components and do not create `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Local Development
 
@@ -148,10 +153,27 @@ Recommended screenshots for portfolio completion:
 ## Vercel Deployment Notes
 
 - Vercel deployment can display the website and AI analysis.
+- For Vercel production deployment, configure `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 - Local JSON storage is not suitable for production or persistent storage on Vercel.
 - Serverless functions should not be used as a reliable file-based CRM database.
-- The `/admin/inquiries` page can still open with an empty state if local JSON storage is unavailable.
+- If Supabase is not configured, the `/admin/inquiries` page can still open with an empty state or local JSON fallback warning.
 - For production CRM data persistence, use Supabase / PostgreSQL / MySQL / MongoDB.
+
+## V2.0 Supabase Database Integration
+
+- Supabase database integration
+- Persistent inquiry storage
+- Production-ready CRM data source
+- Local JSON fallback retained for development
+
+The CRM storage layer now uses Supabase first when the following environment variables are configured:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+When Supabase is unavailable or not configured, the project falls back to local JSON storage for local development only. On Vercel, use Supabase as the persistent CRM data source.
 
 ## Future Roadmap
 

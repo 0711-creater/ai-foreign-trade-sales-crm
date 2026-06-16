@@ -7,7 +7,7 @@ import type { InquiryRecord, InquiryRecordStatus } from "@/lib/inquiryStore";
 
 type InquiriesApiResponse = {
   records: InquiryRecord[];
-  storageMode: "local-json";
+  storageMode: "supabase" | "local-json";
   warning?: string;
 };
 
@@ -69,7 +69,7 @@ export default function AdminInquiriesPage() {
         const apiResult = data as Partial<InquiriesApiResponse>;
 
         setRecords(Array.isArray(apiResult.records) ? apiResult.records : []);
-        setWarning(apiResult.warning ?? "");
+        setWarning(apiResult.storageMode === "local-json" ? apiResult.warning ?? "" : "");
       } catch (requestError) {
         console.error("Failed to load inquiry records:", requestError);
         setError("Failed to load inquiry records. Please try again later.");
