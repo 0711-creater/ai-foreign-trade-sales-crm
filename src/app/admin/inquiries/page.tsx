@@ -5,6 +5,12 @@ import { useEffect, useState } from "react";
 
 import type { InquiryRecord, InquiryRecordStatus } from "@/lib/inquiryStore";
 
+type InquiriesApiResponse = {
+  records: InquiryRecord[];
+  storageMode: "local-json";
+  warning?: string;
+};
+
 function formatCreatedAt(createdAt: string) {
   const date = new Date(createdAt);
 
@@ -39,6 +45,7 @@ export default function AdminInquiriesPage() {
   const [records, setRecords] = useState<InquiryRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
 
   useEffect(() => {
     async function loadInquiryRecords() {
@@ -53,7 +60,16 @@ export default function AdminInquiriesPage() {
 
         const data = (await response.json()) as unknown;
 
-        setRecords(Array.isArray(data) ? (data as InquiryRecord[]) : []);
+        if (Array.isArray(data)) {
+          setRecords(data as InquiryRecord[]);
+          setWarning("");
+          return;
+        }
+
+        const apiResult = data as Partial<InquiriesApiResponse>;
+
+        setRecords(Array.isArray(apiResult.records) ? apiResult.records : []);
+        setWarning(apiResult.warning ?? "");
       } catch (requestError) {
         console.error("Failed to load inquiry records:", requestError);
         setError("Failed to load inquiry records. Please try again later.");
@@ -83,9 +99,16 @@ export default function AdminInquiriesPage() {
 
           {error ? <p className="p-6 text-sm font-medium text-red-700">{error}</p> : null}
 
+          {warning ? (
+            <p className="mx-6 mt-6 rounded-md bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-800">
+              Local JSON storage is for local MVP only. For production deployment, please use Supabase,
+              PostgreSQL, MySQL, MongoDB or another persistent database.
+            </p>
+          ) : null}
+
           {!isLoading && !error && records.length === 0 ? (
             <p className="p-6 text-sm font-medium text-zinc-600">
-              No inquiry records yet. Submit a test inquiry from the Contact page to create the first lead.
+              No inquiries found yet.
             </p>
           ) : null}
 

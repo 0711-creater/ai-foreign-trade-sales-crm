@@ -67,6 +67,9 @@ export type InquiryRecord = {
 const storageDirectory = path.join(process.cwd(), "storage");
 const inquiriesFilePath = path.join(storageDirectory, "inquiries.json");
 
+export const localJsonStorageWarning =
+  "Local JSON storage is not available or not persistent in the current deployment environment.";
+
 async function ensureStorageFile() {
   // 本地 MVP 使用 JSON 文件保存询盘；正式项目应替换为数据库。
   await mkdir(storageDirectory, { recursive: true });
@@ -78,27 +81,47 @@ async function ensureStorageFile() {
   }
 }
 
-export async function getInquiryRecords(): Promise<InquiryRecord[]> {
+export async function getInquiryRecordsWithStatus(): Promise<{
+  records: InquiryRecord[];
+  warning?: string;
+}> {
   try {
     await ensureStorageFile();
     const fileContent = await readFile(inquiriesFilePath, "utf8");
     const parsedRecords = JSON.parse(fileContent) as unknown;
 
-    return Array.isArray(parsedRecords) ? (parsedRecords as InquiryRecord[]) : [];
+    return {
+      records: Array.isArray(parsedRecords) ? (parsedRecords as InquiryRecord[]) : []
+    };
   } catch (error) {
     console.error("Failed to read inquiry records:", error);
-    return [];
+
+    return {
+      records: [],
+      warning: localJsonStorageWarning
+    };
   }
 }
 
+export async function getInquiryRecords(): Promise<InquiryRecord[]> {
+  const result = await getInquiryRecordsWithStatus();
+
+  return result.records;
+}
+
 export async function saveInquiryRecord(record: InquiryRecord) {
-  await ensureStorageFile();
-  const existingRecords = await getInquiryRecords();
-  const nextRecords = [record, ...existingRecords];
+  try {
+    await ensureStorageFile();
+    const existingRecords = await getInquiryRecords();
+    const nextRecords = [record, ...existingRecords];
 
-  await writeFile(inquiriesFilePath, JSON.stringify(nextRecords, null, 2), "utf8");
+    await writeFile(inquiriesFilePath, JSON.stringify(nextRecords, null, 2), "utf8");
 
-  return record;
+    return record;
+  } catch (error) {
+    console.error("Failed to save inquiry record:", error);
+    throw new Error(localJsonStorageWarning);
+  }
 }
 
 export async function getInquiryRecordById(id: string) {

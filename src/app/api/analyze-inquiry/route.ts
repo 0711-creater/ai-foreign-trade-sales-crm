@@ -6,7 +6,7 @@ import {
   type InquiryAnalysisResult,
   type InquiryData
 } from "@/lib/aiInquiryAnalyzer";
-import { saveInquiryRecord } from "@/lib/inquiryStore";
+import { localJsonStorageWarning, saveInquiryRecord } from "@/lib/inquiryStore";
 
 export const runtime = "nodejs";
 
@@ -320,7 +320,9 @@ async function saveAnalyzedInquiry(inquiryData: InquiryData, analysisResult: Inq
 
     return {
       recordId,
-      saved: false
+      saved: false,
+      saveWarning:
+        error instanceof Error && error.message ? error.message : localJsonStorageWarning
     };
   }
 }

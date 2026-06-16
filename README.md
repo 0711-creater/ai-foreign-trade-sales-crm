@@ -145,6 +145,14 @@ Recommended screenshots for portfolio completion:
 - Use PostgreSQL / Supabase / MySQL / MongoDB for production.
 - Add admin authentication before deployment.
 
+## Vercel Deployment Notes
+
+- Vercel deployment can display the website and AI analysis.
+- Local JSON storage is not suitable for production or persistent storage on Vercel.
+- Serverless functions should not be used as a reliable file-based CRM database.
+- The `/admin/inquiries` page can still open with an empty state if local JSON storage is unavailable.
+- For production CRM data persistence, use Supabase / PostgreSQL / MySQL / MongoDB.
+
 ## Future Roadmap
 
 - Supabase / PostgreSQL database
