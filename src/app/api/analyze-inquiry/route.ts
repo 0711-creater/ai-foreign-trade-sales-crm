@@ -6,6 +6,8 @@ import {
   type InquiryAnalysisResult,
   type InquiryData
 } from "@/lib/aiInquiryAnalyzer";
+import { sendInquiryNotification } from "@/lib/emailNotifier";
+import type { InquiryRecord } from "@/lib/inquiryStore";
 import { localJsonStorageWarning, saveInquiryRecord } from "@/lib/inquiryStore";
 
 export const runtime = "nodejs";
@@ -281,34 +283,47 @@ async function callDeepSeek(inquiryData: InquiryData, fallback: InquiryAnalysisR
 
 async function saveAnalyzedInquiry(inquiryData: InquiryData, analysisResult: InquiryAnalysisResult) {
   const recordId = randomUUID();
+  const inquiryRecord: InquiryRecord = {
+    id: recordId,
+    createdAt: new Date().toISOString(),
+    name: inquiryData.name,
+    email: inquiryData.email,
+    company: inquiryData.company,
+    country: inquiryData.country,
+    interestedProduct: inquiryData.interestedProduct,
+    quantity: inquiryData.quantity,
+    message: inquiryData.message,
+    customerType: analysisResult.customerType,
+    purchaseIntent: analysisResult.purchaseIntent,
+    inquirySummary: analysisResult.inquirySummary,
+    suggestedReplyEmail: analysisResult.suggestedReplyEmail,
+    whatsappFollowUpMessage: analysisResult.whatsappFollowUpMessage,
+    nextFollowUpSuggestion: analysisResult.nextFollowUpSuggestion,
+    quotationReadiness: analysisResult.quotationReadiness,
+    missingInformation: analysisResult.missingInformation,
+    requiredQuestions: analysisResult.requiredQuestions,
+    quotationRisk: analysisResult.quotationRisk,
+    recommendedNextAction: analysisResult.recommendedNextAction,
+    mode: analysisResult.mode,
+    fallbackReason: analysisResult.fallbackReason,
+    status: "New",
+    source: "Website Inquiry"
+  };
 
   try {
-    return await saveInquiryRecord({
-      id: recordId,
-      createdAt: new Date().toISOString(),
-      name: inquiryData.name,
-      email: inquiryData.email,
-      company: inquiryData.company,
-      country: inquiryData.country,
-      interestedProduct: inquiryData.interestedProduct,
-      quantity: inquiryData.quantity,
-      message: inquiryData.message,
-      customerType: analysisResult.customerType,
-      purchaseIntent: analysisResult.purchaseIntent,
-      inquirySummary: analysisResult.inquirySummary,
-      suggestedReplyEmail: analysisResult.suggestedReplyEmail,
-      whatsappFollowUpMessage: analysisResult.whatsappFollowUpMessage,
-      nextFollowUpSuggestion: analysisResult.nextFollowUpSuggestion,
-      quotationReadiness: analysisResult.quotationReadiness,
-      missingInformation: analysisResult.missingInformation,
-      requiredQuestions: analysisResult.requiredQuestions,
-      quotationRisk: analysisResult.quotationRisk,
-      recommendedNextAction: analysisResult.recommendedNextAction,
-      mode: analysisResult.mode,
-      fallbackReason: analysisResult.fallbackReason,
-      status: "New",
-      source: "Website Inquiry"
+    const saveResult = await saveInquiryRecord(inquiryRecord);
+    const appBaseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+    const crmDetailUrl = `${appBaseUrl.replace(/\/$/, "")}/admin/inquiries/${saveResult.recordId}`;
+    const notificationResult = await sendInquiryNotification({
+      inquiryRecord,
+      aiAnalysis: analysisResult,
+      crmDetailUrl
     });
+
+    return {
+      ...saveResult,
+      ...notificationResult
+    };
   } catch (error) {
     // 存储失败不应该阻断询盘分析结果返回，方便 MVP 演示时继续查看 AI 输出。
     console.error("Failed to save inquiry record:", error);
@@ -317,7 +332,10 @@ async function saveAnalyzedInquiry(inquiryData: InquiryData, analysisResult: Inq
       recordId,
       saved: false,
       saveWarning:
-        error instanceof Error && error.message ? error.message : localJsonStorageWarning
+        error instanceof Error && error.message ? error.message : localJsonStorageWarning,
+      notificationSent: false,
+      notificationMode: "mock" as const,
+      notificationWarning: "Inquiry was not saved, so notification was skipped."
     };
   }
 }

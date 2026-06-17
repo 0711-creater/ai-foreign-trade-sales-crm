@@ -84,6 +84,10 @@ NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 ADMIN_USERNAME=
 ADMIN_PASSWORD=
+EMAIL_NOTIFICATION_ENABLED=false
+SALES_NOTIFICATION_EMAIL=
+FROM_EMAIL=
+APP_BASE_URL=
 ```
 
 Do not commit `.env.local` to GitHub.
@@ -93,6 +97,8 @@ When `DEEPSEEK_API_KEY` is missing or the API call fails, the project automatica
 `SUPABASE_SERVICE_ROLE_KEY` must only be used on the server side. Do not expose it in Client Components and do not create `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`.
 
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` protect the CRM dashboard and inquiry API routes with Basic Auth. Do not commit real admin credentials to GitHub.
+
+`EMAIL_NOTIFICATION_ENABLED=false` keeps notification in Mock mode. `SALES_NOTIFICATION_EMAIL`, `FROM_EMAIL`, and `APP_BASE_URL` are prepared for future real email provider integration.
 
 ## Local Development
 
@@ -212,6 +218,29 @@ ADMIN_PASSWORD=your_admin_password
 ```
 
 Do not store real admin credentials in the repository. The public website and contact inquiry form remain accessible without Basic Auth.
+
+## V2.2 Inquiry Email Notification
+
+- Inquiry email notification
+- Internal sales alert
+- CRM detail link in notification
+- Mock notification mode
+- Email service extension-ready design
+
+After a website inquiry is analyzed and saved, the server generates an internal sales notification payload. By default, the current version uses Mock notification mode and logs the notification summary on the server.
+
+Current version supports mock notification by default. Real email provider integration can be added with Resend, SMTP, or other email services.
+
+Notification environment variables:
+
+```bash
+EMAIL_NOTIFICATION_ENABLED=false
+SALES_NOTIFICATION_EMAIL=
+FROM_EMAIL=
+APP_BASE_URL=
+```
+
+Email notification failure must not block the website inquiry submission flow.
 
 ## Future Roadmap
 

@@ -37,6 +37,9 @@ export type InquiryAnalysisResult = {
   recommendedNextAction: string;
   mode: AnalysisMode;
   fallbackReason?: FallbackReason;
+  notificationSent?: boolean;
+  notificationMode?: "mock" | "email";
+  notificationWarning?: string;
 };
 
 type NormalizedInquiryData = InquiryData & {

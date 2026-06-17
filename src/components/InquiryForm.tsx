@@ -245,6 +245,15 @@ function AIAnalysisResult({ result }: { result: InquiryAnalysisResult }) {
             className="border border-amber-200 bg-amber-50 md:col-span-2"
           />
         ) : null}
+        <ResultBlock title="Notification Mode" content={result.notificationMode === "email" ? "Email" : "Mock"} />
+        <ResultBlock title="Notification Sent" content={result.notificationSent ? "Yes" : "No"} />
+        {result.notificationWarning ? (
+          <ResultBlock
+            title="Notification Warning"
+            content={result.notificationWarning}
+            className="border border-amber-200 bg-amber-50 md:col-span-2"
+          />
+        ) : null}
         <ResultBlock title="Customer Type" content={result.customerType} />
         <ResultBlock title="Purchase Intent" content={result.purchaseIntent} />
         <div className="rounded-lg bg-brand-50 p-4">
