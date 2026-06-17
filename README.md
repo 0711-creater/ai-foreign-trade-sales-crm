@@ -82,6 +82,8 @@ DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-flash
 NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
+ADMIN_USERNAME=
+ADMIN_PASSWORD=
 ```
 
 Do not commit `.env.local` to GitHub.
@@ -89,6 +91,8 @@ Do not commit `.env.local` to GitHub.
 When `DEEPSEEK_API_KEY` is missing or the API call fails, the project automatically uses Mock fallback mode.
 
 `SUPABASE_SERVICE_ROLE_KEY` must only be used on the server side. Do not expose it in Client Components and do not create `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`.
+
+`ADMIN_USERNAME` and `ADMIN_PASSWORD` protect the CRM dashboard and inquiry API routes with Basic Auth. Do not commit real admin credentials to GitHub.
 
 ## Local Development
 
@@ -153,7 +157,7 @@ Recommended screenshots for portfolio completion:
 ## Vercel Deployment Notes
 
 - Vercel deployment can display the website and AI analysis.
-- For Vercel production deployment, configure `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+- For Vercel production deployment, configure `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_USERNAME` and `ADMIN_PASSWORD`.
 - Local JSON storage is not suitable for production or persistent storage on Vercel.
 - Serverless functions should not be used as a reliable file-based CRM database.
 - If Supabase is not configured, the `/admin/inquiries` page can still open with an empty state or local JSON fallback warning.
@@ -174,6 +178,40 @@ SUPABASE_SERVICE_ROLE_KEY=
 ```
 
 When Supabase is unavailable or not configured, the project falls back to local JSON storage for local development only. On Vercel, use Supabase as the persistent CRM data source.
+
+## V2.1 Admin Access Protection
+
+- Admin access protection
+- Basic Auth for CRM dashboard
+- Protected inquiry API routes
+- Public contact form remains available
+
+Protected paths:
+
+```text
+/admin
+/admin/:path*
+/api/inquiries
+/api/inquiries/:path*
+```
+
+Public paths remain available:
+
+```text
+/
+/products
+/contact
+/api/analyze-inquiry
+```
+
+For Vercel production deployment, add these variables in Vercel Settings -> Environment Variables:
+
+```bash
+ADMIN_USERNAME=your_admin_username
+ADMIN_PASSWORD=your_admin_password
+```
+
+Do not store real admin credentials in the repository. The public website and contact inquiry form remain accessible without Basic Auth.
 
 ## Future Roadmap
 
