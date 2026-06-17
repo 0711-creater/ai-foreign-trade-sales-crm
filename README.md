@@ -88,6 +88,7 @@ EMAIL_NOTIFICATION_ENABLED=false
 SALES_NOTIFICATION_EMAIL=
 FROM_EMAIL=
 APP_BASE_URL=
+RESEND_API_KEY=
 ```
 
 Do not commit `.env.local` to GitHub.
@@ -98,7 +99,7 @@ When `DEEPSEEK_API_KEY` is missing or the API call fails, the project automatica
 
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` protect the CRM dashboard and inquiry API routes with Basic Auth. Do not commit real admin credentials to GitHub.
 
-`EMAIL_NOTIFICATION_ENABLED=false` keeps notification in Mock mode. `SALES_NOTIFICATION_EMAIL`, `FROM_EMAIL`, and `APP_BASE_URL` are prepared for future real email provider integration.
+`EMAIL_NOTIFICATION_ENABLED=false` keeps notification in Mock mode. For real Resend email notification, set `EMAIL_NOTIFICATION_ENABLED=true` and configure `RESEND_API_KEY`, `SALES_NOTIFICATION_EMAIL`, `FROM_EMAIL`, and `APP_BASE_URL`.
 
 ## Local Development
 
@@ -229,7 +230,7 @@ Do not store real admin credentials in the repository. The public website and co
 
 After a website inquiry is analyzed and saved, the server generates an internal sales notification payload. By default, the current version uses Mock notification mode and logs the notification summary on the server.
 
-Current version supports mock notification by default. Real email provider integration can be added with Resend, SMTP, or other email services.
+Current version supports mock notification by default. Real email provider integration is available through Resend, while the notification module still keeps Mock fallback when email sending is disabled or fails.
 
 Notification environment variables:
 
@@ -238,9 +239,29 @@ EMAIL_NOTIFICATION_ENABLED=false
 SALES_NOTIFICATION_EMAIL=
 FROM_EMAIL=
 APP_BASE_URL=
+RESEND_API_KEY=
 ```
 
 Email notification failure must not block the website inquiry submission flow.
+
+## V2.3 Real Email Notification with Resend
+
+- Resend email notification
+- Real internal sales alert
+- CRM detail link in email
+- Mock fallback retained
+
+For real email notification, configure these environment variables on the server side:
+
+```bash
+RESEND_API_KEY=
+EMAIL_NOTIFICATION_ENABLED=true
+SALES_NOTIFICATION_EMAIL=
+FROM_EMAIL=
+APP_BASE_URL=
+```
+
+`RESEND_API_KEY` must not be exposed in Client Components or committed to GitHub. If Resend is not configured, disabled, or fails to send, the inquiry submission, AI analysis, Supabase saving, and frontend result display continue normally with Mock fallback.
 
 ## Future Roadmap
 
