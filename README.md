@@ -319,6 +319,27 @@ next_action
 follow_up_priority
 ```
 
+## V2.6 CRM Pipeline Dashboard
+
+- CRM Pipeline Dashboard
+- Sales KPI overview
+- Lead priority distribution
+- Follow-up overdue detection
+- Recent high-value leads
+- Sales management dashboard
+
+The protected `/admin/dashboard` page reads CRM records through the server-side storage layer and summarizes the sales pipeline without exposing Supabase credentials to the browser.
+
+Dashboard coverage:
+
+- Total inquiries, new leads and high-priority leads
+- Overdue follow-ups
+- Quotation ready and not-ready counts
+- Average lead score
+- Lead priority, follow-up stage and purchase intent distributions
+- Recent high-value lead table
+- Overdue follow-up table
+
 ## Future Roadmap
 
 - Supabase / PostgreSQL database

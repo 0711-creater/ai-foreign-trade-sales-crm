@@ -170,12 +170,20 @@ export default function AdminInquiriesPage() {
   return (
     <main className="bg-zinc-50 py-16">
       <div className="container-page">
-        <div className="max-w-3xl">
-          <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Local CRM MVP</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-zinc-950">Inquiry CRM Dashboard</h1>
-          <p className="mt-4 text-lg leading-8 text-zinc-600">
-            This is a local MVP dashboard for reviewing website inquiries and AI analysis results.
-          </p>
+        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Local CRM MVP</p>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight text-zinc-950">Inquiry CRM Dashboard</h1>
+            <p className="mt-4 text-lg leading-8 text-zinc-600">
+              This is a local MVP dashboard for reviewing website inquiries and AI analysis results.
+            </p>
+          </div>
+          <Link
+            href="/admin/dashboard"
+            className="btn-base border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-100"
+          >
+            View Dashboard
+          </Link>
         </div>
 
         <div className="mt-8 flex flex-wrap gap-2">
