@@ -41,11 +41,48 @@ function getReadinessBadgeClass(readiness?: string) {
   return readiness === "Ready" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800";
 }
 
+function getLeadPriorityBadgeClass(priority?: string) {
+  if (priority === "High") {
+    return "bg-red-100 text-red-800";
+  }
+
+  if (priority === "Medium") {
+    return "bg-amber-100 text-amber-800";
+  }
+
+  return "bg-zinc-200 text-zinc-700";
+}
+
+function getLeadPriorityRank(priority?: string) {
+  const rankMap: Record<string, number> = {
+    High: 3,
+    Medium: 2,
+    Low: 1
+  };
+
+  return rankMap[priority ?? ""] ?? 0;
+}
+
 export default function AdminInquiriesPage() {
   const [records, setRecords] = useState<InquiryRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
+  const sortedRecords = [...records].sort((a, b) => {
+    const priorityDiff = getLeadPriorityRank(b.leadPriority) - getLeadPriorityRank(a.leadPriority);
+
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    const scoreDiff = (b.leadScore ?? 0) - (a.leadScore ?? 0);
+
+    if (scoreDiff !== 0) {
+      return scoreDiff;
+    }
+
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   useEffect(() => {
     async function loadInquiryRecords() {
@@ -112,9 +149,9 @@ export default function AdminInquiriesPage() {
             </p>
           ) : null}
 
-          {!isLoading && !error && records.length > 0 ? (
+          {!isLoading && !error && sortedRecords.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="min-w-[1280px] w-full border-collapse text-left text-sm">
+              <table className="min-w-[1440px] w-full border-collapse text-left text-sm">
                 <thead className="bg-brand-50 text-brand-900">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Created At</th>
@@ -124,6 +161,8 @@ export default function AdminInquiriesPage() {
                     <th className="px-4 py-3 font-semibold">Product</th>
                     <th className="px-4 py-3 font-semibold">Quantity</th>
                     <th className="px-4 py-3 font-semibold">Customer Type</th>
+                    <th className="px-4 py-3 font-semibold">Lead Score</th>
+                    <th className="px-4 py-3 font-semibold">Lead Priority</th>
                     <th className="px-4 py-3 font-semibold">Purchase Intent</th>
                     <th className="px-4 py-3 font-semibold">Quotation Readiness</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
@@ -132,7 +171,7 @@ export default function AdminInquiriesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200">
-                  {records.map((record) => (
+                  {sortedRecords.map((record) => (
                     <tr key={record.id} className="align-top">
                       <td className="px-4 py-4 text-zinc-700">{formatCreatedAt(record.createdAt)}</td>
                       <td className="px-4 py-4 font-medium text-zinc-950">{record.name}</td>
@@ -141,6 +180,12 @@ export default function AdminInquiriesPage() {
                       <td className="px-4 py-4 text-zinc-700">{record.interestedProduct}</td>
                       <td className="px-4 py-4 text-zinc-700">{record.quantity}</td>
                       <td className="px-4 py-4 text-zinc-700">{record.customerType}</td>
+                      <td className="px-4 py-4 font-semibold text-zinc-950">{record.leadScore ?? 0}</td>
+                      <td className="px-4 py-4">
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getLeadPriorityBadgeClass(record.leadPriority)}`}>
+                          {record.leadPriority ?? "Low"}
+                        </span>
+                      </td>
                       <td className="px-4 py-4 text-zinc-700">{record.purchaseIntent}</td>
                       <td className="px-4 py-4">
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getReadinessBadgeClass(record.quotationReadiness)}`}>

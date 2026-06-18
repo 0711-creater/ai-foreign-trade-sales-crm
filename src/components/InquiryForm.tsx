@@ -220,6 +220,12 @@ function AIAnalysisResult({ result }: { result: InquiryAnalysisResult }) {
     result.quotationReadiness === "Ready"
       ? "bg-emerald-100 text-emerald-800"
       : "bg-amber-100 text-amber-800";
+  const priorityClass =
+    result.leadPriority === "High"
+      ? "bg-red-100 text-red-800"
+      : result.leadPriority === "Medium"
+        ? "bg-amber-100 text-amber-800"
+        : "bg-zinc-200 text-zinc-700";
 
   return (
     <section className="rounded-lg border border-brand-200 bg-white p-6 shadow-soft">
@@ -256,6 +262,29 @@ function AIAnalysisResult({ result }: { result: InquiryAnalysisResult }) {
         ) : null}
         <ResultBlock title="Customer Type" content={result.customerType} />
         <ResultBlock title="Purchase Intent" content={result.purchaseIntent} />
+        <div className="rounded-lg border border-brand-200 bg-brand-50 p-4 md:col-span-2">
+          <p className="text-base font-bold text-brand-900">Lead Scoring</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <ResultBlock title="Lead Score" content={`${result.leadScore}/100`} className="bg-white" />
+            <div className="rounded-lg bg-white p-4">
+              <p className="text-sm font-semibold text-brand-800">Lead Priority</p>
+              <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${priorityClass}`}>
+                {result.leadPriority}
+              </span>
+            </div>
+            <ResultBlock
+              title="Lead Score Reason"
+              content={result.leadScoreReason}
+              className="bg-white md:col-span-2"
+            />
+            <ResultBlock
+              title="Recommended Follow-up Time"
+              content={result.recommendedFollowUpTime}
+              className="bg-white"
+            />
+            <ResultBlock title="Sales Strategy" content={result.salesStrategy} className="bg-white" />
+          </div>
+        </div>
         <div className="rounded-lg bg-brand-50 p-4">
           <p className="text-sm font-semibold text-brand-800">Quotation Readiness</p>
           <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${readinessClass}`}>

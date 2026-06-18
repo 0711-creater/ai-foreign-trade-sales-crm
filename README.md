@@ -263,6 +263,29 @@ APP_BASE_URL=
 
 `RESEND_API_KEY` must not be exposed in Client Components or committed to GitHub. If Resend is not configured, disabled, or fails to send, the inquiry submission, AI analysis, Supabase saving, and frontend result display continue normally with Mock fallback.
 
+## V2.4 AI Lead Scoring & Priority System
+
+- AI Lead Scoring
+- Lead Priority Classification
+- Sales follow-up timing recommendation
+- Lead scoring reason
+- CRM lead prioritization
+
+After each inquiry is analyzed, the system assigns a lead score from 0 to 100 based on quantity, purchase intent, customer type, quotation readiness, message quality and urgency. CRM records can then be sorted by lead priority so sales teams can follow up high-value buyers first.
+
+For Supabase storage, add these columns in Supabase SQL Editor:
+
+```sql
+alter table inquiries
+add column if not exists lead_score integer,
+add column if not exists lead_priority text,
+add column if not exists lead_score_reason text,
+add column if not exists recommended_follow_up_time text,
+add column if not exists sales_strategy text;
+
+notify pgrst, 'reload schema';
+```
+
 ## Future Roadmap
 
 - Supabase / PostgreSQL database

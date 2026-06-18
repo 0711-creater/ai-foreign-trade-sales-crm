@@ -90,12 +90,32 @@ function toStringArrayOrFallback(value: unknown, fallback: string[]) {
   return stringValues.length > 0 ? stringValues : fallback;
 }
 
+function toNumberOrFallback(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function getLeadPriorityFromScore(leadScore: number): InquiryAnalysisResult["leadPriority"] {
+  if (leadScore >= 80) {
+    return "High";
+  }
+
+  if (leadScore >= 50) {
+    return "Medium";
+  }
+
+  return "Low";
+}
+
 function validateDeepSeekResult(value: unknown, fallback: InquiryAnalysisResult): InquiryAnalysisResult {
   if (!value || typeof value !== "object") {
     throw new Error("DeepSeek JSON result is not an object.");
   }
 
   const result = value as Record<string, unknown>;
+  const leadScore = Math.min(
+    100,
+    Math.max(0, Math.round(toNumberOrFallback(result.leadScore, fallback.leadScore)))
+  );
 
   return {
     customerType: toStringOrFallback(result.customerType, fallback.customerType),
@@ -121,6 +141,15 @@ function validateDeepSeekResult(value: unknown, fallback: InquiryAnalysisResult)
       result.recommendedNextAction,
       fallback.recommendedNextAction
     ),
+    leadScore,
+    // Priority 始终由分数计算，避免模型返回的标签与业务阈值不一致。
+    leadPriority: getLeadPriorityFromScore(leadScore),
+    leadScoreReason: toStringOrFallback(result.leadScoreReason, fallback.leadScoreReason),
+    recommendedFollowUpTime: toStringOrFallback(
+      result.recommendedFollowUpTime,
+      fallback.recommendedFollowUpTime
+    ),
+    salesStrategy: toStringOrFallback(result.salesStrategy, fallback.salesStrategy),
     mode: "deepseek"
   };
 }
@@ -143,6 +172,11 @@ Required JSON schema:
   "requiredQuestions": ["string"],
   "quotationRisk": "string",
   "recommendedNextAction": "string",
+  "leadScore": 0,
+  "leadPriority": "High or Medium or Low",
+  "leadScoreReason": "string",
+  "recommendedFollowUpTime": "string",
+  "salesStrategy": "string",
   "mode": "deepseek"
 }
 
@@ -176,6 +210,17 @@ MirrorPro Supply Sales Team
 - requiredQuestions must be a practical string array of questions the sales person should ask the buyer before quotation.
 - quotationRisk must explain the pricing risk if the inquiry is incomplete.
 - recommendedNextAction must tell the sales person whether to ask for missing details first or prepare a formal quotation.
+- Add AI Lead Scoring.
+- leadScore must be a number from 0 to 100.
+- Score quantity strongly: quantity >= 5000 is high value, 1000-4999 is medium-high value, 100-999 is medium value, and below 100 is low or sample stage.
+- Add points for High purchase intent. Medium purchase intent should receive moderate score. Low or sample stage should receive lower score.
+- Importer, Distributor and Wholesaler should score higher. Amazon Seller should be medium-high. Individual or Unknown should score lower.
+- Quotation Readiness "Ready" should increase score. "Not Ready" should not heavily penalize the lead if the buyer is still high-value, but salesStrategy must ask for missing information.
+- Message quality should affect score. Give more score when the message contains size, quantity, FOB or another trade term, destination market, packaging requirement or logo requirement. Very short messages such as "price?" or only asking for cheap price should score lower.
+- If the buyer mentions urgent, asap or fast delivery, add urgency score but mention the schedule risk in leadScoreReason or salesStrategy.
+- leadPriority must follow exactly: leadScore >= 80 is High, 50-79 is Medium, below 50 is Low.
+- recommendedFollowUpTime should be "Within 2 hours" for High or urgent leads, "Within 24 hours" for Medium leads, and "Within 2-3 days" for Low leads.
+- salesStrategy must give a practical follow-up strategy for a foreign trade sales person.
 - Return valid JSON only.
 
 Inquiry data:
@@ -304,6 +349,11 @@ async function saveAnalyzedInquiry(inquiryData: InquiryData, analysisResult: Inq
     requiredQuestions: analysisResult.requiredQuestions,
     quotationRisk: analysisResult.quotationRisk,
     recommendedNextAction: analysisResult.recommendedNextAction,
+    leadScore: analysisResult.leadScore,
+    leadPriority: analysisResult.leadPriority,
+    leadScoreReason: analysisResult.leadScoreReason,
+    recommendedFollowUpTime: analysisResult.recommendedFollowUpTime,
+    salesStrategy: analysisResult.salesStrategy,
     mode: analysisResult.mode,
     fallbackReason: analysisResult.fallbackReason,
     status: "New",

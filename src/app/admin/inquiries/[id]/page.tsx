@@ -96,6 +96,18 @@ function getReviewStatusBadgeClass(status?: string) {
   return "bg-amber-100 text-amber-800";
 }
 
+function getLeadPriorityBadgeClass(priority?: string) {
+  if (priority === "High") {
+    return "bg-red-100 text-red-800";
+  }
+
+  if (priority === "Medium") {
+    return "bg-amber-100 text-amber-800";
+  }
+
+  return "bg-zinc-200 text-zinc-700";
+}
+
 function getSafeList(items?: string[]) {
   return Array.isArray(items) ? items : [];
 }
@@ -275,6 +287,13 @@ export default function InquiryDetailPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <InfoItem label="Customer Type" value={record.customerType} />
                   <InfoItem label="Purchase Intent" value={record.purchaseIntent} />
+                  <InfoItem label="Lead Score" value={`${record.leadScore ?? 0}/100`} />
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-500">Lead Priority</p>
+                    <span className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getLeadPriorityBadgeClass(record.leadPriority)}`}>
+                      {record.leadPriority ?? "Low"}
+                    </span>
+                  </div>
                   <div>
                     <p className="text-sm font-semibold text-zinc-500">Quotation Readiness</p>
                     <span className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getReadinessBadgeClass(record.quotationReadiness)}`}>
@@ -284,6 +303,9 @@ export default function InquiryDetailPage() {
                   <InfoItem label="Mode" value={record.mode} />
                   <InfoItem label="Updated At" value={formatDateTime(record.updatedAt)} />
                 </div>
+                <InfoItem label="Lead Score Reason" value={record.leadScoreReason ?? "Lead scoring was not available for this record."} className="mt-4" />
+                <InfoItem label="Recommended Follow-up Time" value={record.recommendedFollowUpTime ?? "Not specified"} className="mt-4" />
+                <InfoItem label="Sales Strategy" value={record.salesStrategy ?? "No sales strategy recorded."} className="mt-4" />
                 <InfoItem label="Inquiry Summary" value={record.inquirySummary} className="mt-4" />
                 <ListItem
                   label="Missing Information"

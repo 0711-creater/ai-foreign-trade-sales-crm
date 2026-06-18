@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AnalysisMode, PurchaseIntent, QuotationReadiness } from "@/lib/aiInquiryAnalyzer";
+import type { AnalysisMode, LeadPriority, PurchaseIntent, QuotationReadiness } from "@/lib/aiInquiryAnalyzer";
 import type { QuotationInput, QuotationResult } from "@/lib/quotationCalculator";
 import type { QuotationReview } from "@/lib/quotationReviewer";
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
@@ -58,6 +58,11 @@ export type InquiryRecord = {
   requiredQuestions: string[];
   quotationRisk: string;
   recommendedNextAction: string;
+  leadScore: number;
+  leadPriority: LeadPriority;
+  leadScoreReason: string;
+  recommendedFollowUpTime: string;
+  salesStrategy: string;
   mode: AnalysisMode;
   fallbackReason?: string;
   status: InquiryRecordStatus;
@@ -88,6 +93,11 @@ type DbInquiryRecord = {
   required_questions: string[];
   quotation_risk: string;
   recommended_next_action: string;
+  lead_score?: number | null;
+  lead_priority?: LeadPriority | null;
+  lead_score_reason?: string | null;
+  recommended_follow_up_time?: string | null;
+  sales_strategy?: string | null;
   mode: AnalysisMode;
   fallback_reason?: string | null;
   status: InquiryRecordStatus;
@@ -129,6 +139,11 @@ export function toDbRecord(record: InquiryRecord): DbInquiryRecord {
     required_questions: record.requiredQuestions,
     quotation_risk: record.quotationRisk,
     recommended_next_action: record.recommendedNextAction,
+    lead_score: record.leadScore,
+    lead_priority: record.leadPriority,
+    lead_score_reason: record.leadScoreReason,
+    recommended_follow_up_time: record.recommendedFollowUpTime,
+    sales_strategy: record.salesStrategy,
     mode: record.mode,
     status: record.status,
     source: record.source,
@@ -160,6 +175,11 @@ export function fromDbRecord(row: DbInquiryRecord): InquiryRecord {
     requiredQuestions: row.required_questions ?? [],
     quotationRisk: row.quotation_risk,
     recommendedNextAction: row.recommended_next_action,
+    leadScore: row.lead_score ?? 0,
+    leadPriority: row.lead_priority ?? "Low",
+    leadScoreReason: row.lead_score_reason ?? "Lead scoring was not available for this record.",
+    recommendedFollowUpTime: row.recommended_follow_up_time ?? "Not specified",
+    salesStrategy: row.sales_strategy ?? "No sales strategy recorded.",
     mode: row.mode,
     fallbackReason: row.fallback_reason ?? undefined,
     status: row.status,

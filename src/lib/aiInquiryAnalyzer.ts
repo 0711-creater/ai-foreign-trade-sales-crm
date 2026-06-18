@@ -14,6 +14,8 @@ export type PurchaseIntent = "High" | "Medium" | "Low / Sample Stage" | "Sample 
 
 export type QuotationReadiness = "Ready" | "Not Ready";
 
+export type LeadPriority = "High" | "Medium" | "Low";
+
 export type FallbackReason =
   | "Missing DEEPSEEK_API_KEY"
   | "Invalid DeepSeek API key"
@@ -35,6 +37,11 @@ export type InquiryAnalysisResult = {
   requiredQuestions: string[];
   quotationRisk: string;
   recommendedNextAction: string;
+  leadScore: number;
+  leadPriority: LeadPriority;
+  leadScoreReason: string;
+  recommendedFollowUpTime: string;
+  salesStrategy: string;
   mode: AnalysisMode;
   fallbackReason?: FallbackReason;
   notificationSent?: boolean;
@@ -516,11 +523,151 @@ function buildQuotationReadiness(data: NormalizedInquiryData) {
   };
 }
 
+function getLeadPriority(leadScore: number): LeadPriority {
+  if (leadScore >= 80) {
+    return "High";
+  }
+
+  if (leadScore >= 50) {
+    return "Medium";
+  }
+
+  return "Low";
+}
+
+function getRecommendedFollowUpTime(leadPriority: LeadPriority, message: string) {
+  const lowerMessage = message.toLowerCase();
+
+  if (leadPriority === "High" || includesAnyKeyword(lowerMessage, ["urgent", "asap", "fast delivery"])) {
+    return "Within 2 hours";
+  }
+
+  if (leadPriority === "Medium") {
+    return "Within 24 hours";
+  }
+
+  return "Within 2-3 days";
+}
+
+function buildLeadScoring(
+  data: NormalizedInquiryData,
+  customerType: string,
+  purchaseIntent: PurchaseIntent,
+  quotationReadiness: QuotationReadiness
+) {
+  const message = data.message.toLowerCase();
+  const reasons: string[] = [];
+  let leadScore = 20;
+
+  if (data.quantityNumber >= 5000) {
+    leadScore += 35;
+    reasons.push("large order quantity");
+  } else if (data.quantityNumber >= 1000) {
+    leadScore += 25;
+    reasons.push("bulk order quantity");
+  } else if (data.quantityNumber >= 100) {
+    leadScore += 15;
+    reasons.push("moderate order quantity");
+  } else if (data.quantityNumber > 0) {
+    leadScore += 5;
+    reasons.push("small or sample-stage quantity");
+  } else {
+    reasons.push("quantity not specified");
+  }
+
+  if (purchaseIntent === "High" || purchaseIntent === "Urgent Inquiry") {
+    leadScore += 20;
+    reasons.push("strong purchase intent");
+  } else if (purchaseIntent === "Medium") {
+    leadScore += 12;
+    reasons.push("medium purchase intent");
+  } else {
+    leadScore += 5;
+    reasons.push("early-stage or sample inquiry");
+  }
+
+  if (["Importer", "Distributor", "Wholesaler"].includes(customerType)) {
+    leadScore += 15;
+    reasons.push(`${customerType.toLowerCase()} buyer profile`);
+  } else if (customerType === "Amazon Seller") {
+    leadScore += 12;
+    reasons.push("Amazon seller profile");
+  } else if (customerType === "Potential B2B Buyer") {
+    leadScore += 10;
+    reasons.push("potential B2B buyer profile");
+  } else {
+    leadScore += 3;
+    reasons.push("buyer type needs qualification");
+  }
+
+  if (quotationReadiness === "Ready") {
+    leadScore += 10;
+    reasons.push("quotation information is mostly ready");
+  } else {
+    leadScore += 3;
+    reasons.push("quotation information still needs confirmation");
+  }
+
+  const qualitySignals = [
+    hasDimension(message) || message.includes("size"),
+    /\bquantity\b/.test(message) || /\d[\d,]*\s*(pcs|pieces|units)\b/.test(message),
+    includesAnyKeyword(message, ["fob", "exw", "cif", "ddp", "lead time"]),
+    data.destinationMarket !== "Not specified" || message.includes("market"),
+    includesAnyKeyword(message, ["packaging", "package", "carton", "box"]),
+    includesAnyKeyword(message, ["logo", "private label", "branding"]),
+    includesAnyKeyword(message, ["target price", "material", "thickness"])
+  ].filter(Boolean).length;
+
+  leadScore += qualitySignals * 3;
+
+  if (qualitySignals >= 3) {
+    reasons.push("message includes useful quotation details");
+  }
+
+  if (/^\s*(price\??|cheap\??)\s*$/i.test(data.message.trim()) || data.message.trim().length < 12) {
+    leadScore -= 15;
+    reasons.push("message is too short for reliable qualification");
+  }
+
+  if (includesAnyKeyword(message, ["urgent", "asap", "fast delivery"])) {
+    leadScore += 5;
+    reasons.push("urgent timing request");
+  }
+
+  leadScore = Math.min(100, Math.max(0, Math.round(leadScore)));
+
+  const leadPriority = getLeadPriority(leadScore);
+  const recommendedFollowUpTime = getRecommendedFollowUpTime(leadPriority, message);
+  const baseSalesStrategy =
+    leadPriority === "High"
+      ? "Prioritize this lead, confirm missing quotation details quickly, and prepare a structured quotation or sample plan."
+      : leadPriority === "Medium"
+        ? "Follow up within one business day, qualify specifications and target price, then decide whether to prepare a formal quotation."
+        : "Use a light qualification reply first, confirm buyer role, quantity and project timeline before spending time on a detailed quotation.";
+  const salesStrategy = includesAnyKeyword(message, ["urgent", "asap", "fast delivery"])
+    ? `${baseSalesStrategy} Confirm the required delivery date and production feasibility before making any lead-time commitment.`
+    : baseSalesStrategy;
+
+  return {
+    leadScore,
+    leadPriority,
+    leadScoreReason: `Score ${leadScore}/100 based on ${reasons.join(", ")}.`,
+    recommendedFollowUpTime,
+    salesStrategy
+  };
+}
+
 export function analyzeInquiry(inquiryData: InquiryData): InquiryAnalysisResult {
   const normalizedData = normalizeInquiryData(inquiryData);
   const purchaseIntent = getPurchaseIntent(normalizedData);
   const customerType = getCustomerType(normalizedData);
   const quotationCheck = buildQuotationReadiness(normalizedData);
+  const leadScoring = buildLeadScoring(
+    normalizedData,
+    customerType,
+    purchaseIntent,
+    quotationCheck.quotationReadiness
+  );
 
   return {
     customerType,
@@ -530,6 +677,7 @@ export function analyzeInquiry(inquiryData: InquiryData): InquiryAnalysisResult 
     whatsappFollowUpMessage: buildWhatsappMessage(normalizedData),
     nextFollowUpSuggestion: buildNextFollowUpSuggestion(normalizedData),
     ...quotationCheck,
+    ...leadScoring,
     mode: "mock"
   };
 }
