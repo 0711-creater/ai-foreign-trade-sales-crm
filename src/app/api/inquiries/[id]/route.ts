@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
+  followUpStages,
+  type FollowUpPriority,
+  type FollowUpStage
+} from "@/lib/followUpPlanner";
+import {
   getInquiryRecordById,
   inquiryRecordStatuses,
   updateInquiryRecord,
@@ -18,6 +23,22 @@ type RouteContext = {
 
 function isValidStatus(value: unknown): value is InquiryRecordStatus {
   return typeof value === "string" && inquiryRecordStatuses.includes(value as InquiryRecordStatus);
+}
+
+function isValidFollowUpStage(value: unknown): value is FollowUpStage {
+  return typeof value === "string" && followUpStages.includes(value as FollowUpStage);
+}
+
+function isValidFollowUpPriority(value: unknown): value is FollowUpPriority {
+  return value === "High" || value === "Medium" || value === "Low";
+}
+
+function isValidIsoDate(value: unknown, allowEmpty = false) {
+  if (allowEmpty && value === "") {
+    return true;
+  }
+
+  return typeof value === "string" && !Number.isNaN(Date.parse(value));
 }
 
 function buildAllowedUpdates(body: unknown): InquiryRecordUpdate | null {
@@ -50,6 +71,46 @@ function buildAllowedUpdates(body: unknown): InquiryRecordUpdate | null {
     }
 
     updates.updatedAt = data.updatedAt;
+  }
+
+  if ("followUpStage" in data) {
+    if (!isValidFollowUpStage(data.followUpStage)) {
+      return null;
+    }
+
+    updates.followUpStage = data.followUpStage;
+  }
+
+  if ("lastContactedAt" in data) {
+    if (!isValidIsoDate(data.lastContactedAt, true)) {
+      return null;
+    }
+
+    updates.lastContactedAt = data.lastContactedAt as string;
+  }
+
+  if ("nextAction" in data) {
+    if (typeof data.nextAction !== "string") {
+      return null;
+    }
+
+    updates.nextAction = data.nextAction;
+  }
+
+  if ("followUpDueAt" in data) {
+    if (!isValidIsoDate(data.followUpDueAt)) {
+      return null;
+    }
+
+    updates.followUpDueAt = data.followUpDueAt as string;
+  }
+
+  if ("followUpPriority" in data) {
+    if (!isValidFollowUpPriority(data.followUpPriority)) {
+      return null;
+    }
+
+    updates.followUpPriority = data.followUpPriority;
   }
 
   return updates;

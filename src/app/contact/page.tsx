@@ -15,7 +15,7 @@ export default function ContactPage() {
           <SectionTitle
             eyebrow="Contact"
             title="Contact Us for mirror sourcing"
-            description="Tell us your target product, order quantity, customization requirements and destination market. The current MVP uses a front-end mock submission."
+            description="Submit your sourcing inquiry. The system will analyze the inquiry with AI, save it to CRM, and notify the sales team."
           />
         </div>
       </section>

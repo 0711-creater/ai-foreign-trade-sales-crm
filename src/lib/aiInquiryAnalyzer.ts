@@ -47,6 +47,10 @@ export type InquiryAnalysisResult = {
   notificationSent?: boolean;
   notificationMode?: "mock" | "email";
   notificationWarning?: string;
+  followUpPriority?: LeadPriority;
+  followUpDueAt?: string;
+  followUpStage?: string;
+  nextAction?: string;
 };
 
 type NormalizedInquiryData = InquiryData & {

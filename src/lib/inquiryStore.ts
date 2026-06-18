@@ -4,6 +4,7 @@ import path from "node:path";
 import type { AnalysisMode, LeadPriority, PurchaseIntent, QuotationReadiness } from "@/lib/aiInquiryAnalyzer";
 import type { QuotationInput, QuotationResult } from "@/lib/quotationCalculator";
 import type { QuotationReview } from "@/lib/quotationReviewer";
+import type { FollowUpPriority, FollowUpStage } from "@/lib/followUpPlanner";
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
 
 export const inquiryRecordStatuses = [
@@ -22,6 +23,11 @@ export type StorageMode = "supabase" | "local-json";
 export type InquiryRecordUpdate = {
   status?: InquiryRecordStatus;
   followUpNote?: string;
+  followUpStage?: FollowUpStage;
+  lastContactedAt?: string;
+  nextAction?: string;
+  followUpDueAt?: string;
+  followUpPriority?: FollowUpPriority;
   updatedAt?: string;
 };
 
@@ -63,6 +69,11 @@ export type InquiryRecord = {
   leadScoreReason: string;
   recommendedFollowUpTime: string;
   salesStrategy: string;
+  followUpDueAt: string;
+  followUpStage: FollowUpStage;
+  lastContactedAt?: string;
+  nextAction: string;
+  followUpPriority: FollowUpPriority;
   mode: AnalysisMode;
   fallbackReason?: string;
   status: InquiryRecordStatus;
@@ -98,6 +109,11 @@ type DbInquiryRecord = {
   lead_score_reason?: string | null;
   recommended_follow_up_time?: string | null;
   sales_strategy?: string | null;
+  follow_up_due_at?: string | null;
+  follow_up_stage?: FollowUpStage | null;
+  last_contacted_at?: string | null;
+  next_action?: string | null;
+  follow_up_priority?: FollowUpPriority | null;
   mode: AnalysisMode;
   fallback_reason?: string | null;
   status: InquiryRecordStatus;
@@ -144,6 +160,11 @@ export function toDbRecord(record: InquiryRecord): DbInquiryRecord {
     lead_score_reason: record.leadScoreReason,
     recommended_follow_up_time: record.recommendedFollowUpTime,
     sales_strategy: record.salesStrategy,
+    follow_up_due_at: record.followUpDueAt,
+    follow_up_stage: record.followUpStage,
+    last_contacted_at: record.lastContactedAt ?? null,
+    next_action: record.nextAction,
+    follow_up_priority: record.followUpPriority,
     mode: record.mode,
     status: record.status,
     source: record.source,
@@ -180,6 +201,11 @@ export function fromDbRecord(row: DbInquiryRecord): InquiryRecord {
     leadScoreReason: row.lead_score_reason ?? "Lead scoring was not available for this record.",
     recommendedFollowUpTime: row.recommended_follow_up_time ?? "Not specified",
     salesStrategy: row.sales_strategy ?? "No sales strategy recorded.",
+    followUpDueAt: row.follow_up_due_at ?? row.created_at,
+    followUpStage: row.follow_up_stage ?? "New",
+    lastContactedAt: row.last_contacted_at ?? undefined,
+    nextAction: row.next_action ?? "Review inquiry and decide the next follow-up action.",
+    followUpPriority: row.follow_up_priority ?? row.lead_priority ?? "Low",
     mode: row.mode,
     fallbackReason: row.fallback_reason ?? undefined,
     status: row.status,
@@ -293,10 +319,36 @@ export async function saveInquiryRecord(record: InquiryRecord) {
 
   if (supabase) {
     try {
-      const { error } = await supabase.from("inquiries").insert(toDbRecord(record));
+      const dbRecord = toDbRecord(record);
+      const { data, error } = await supabase
+        .from("inquiries")
+        .insert(dbRecord)
+        .select(
+          "id, follow_up_priority, follow_up_due_at, follow_up_stage, next_action, last_contacted_at"
+        )
+        .single();
 
       if (error) {
         throw error;
+      }
+
+      const savedFollowUpFields = data as Pick<
+        DbInquiryRecord,
+        | "id"
+        | "follow_up_priority"
+        | "follow_up_due_at"
+        | "follow_up_stage"
+        | "next_action"
+        | "last_contacted_at"
+      >;
+
+      if (
+        !savedFollowUpFields.follow_up_priority ||
+        !savedFollowUpFields.follow_up_due_at ||
+        !savedFollowUpFields.follow_up_stage ||
+        !savedFollowUpFields.next_action
+      ) {
+        throw new Error("Supabase inquiry insert did not persist the follow-up plan fields.");
       }
 
       return {
@@ -338,6 +390,15 @@ function toDbUpdates(updates: InquiryRecordUpdate) {
   return {
     ...(updates.status ? { status: updates.status } : {}),
     ...("followUpNote" in updates ? { follow_up_note: updates.followUpNote ?? null } : {}),
+    ...("followUpStage" in updates ? { follow_up_stage: updates.followUpStage } : {}),
+    ...("lastContactedAt" in updates
+      ? { last_contacted_at: updates.lastContactedAt || null }
+      : {}),
+    ...("nextAction" in updates ? { next_action: updates.nextAction } : {}),
+    ...("followUpDueAt" in updates ? { follow_up_due_at: updates.followUpDueAt } : {}),
+    ...("followUpPriority" in updates
+      ? { follow_up_priority: updates.followUpPriority }
+      : {}),
     updated_at: updates.updatedAt ?? new Date().toISOString()
   };
 }

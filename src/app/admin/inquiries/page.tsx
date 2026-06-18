@@ -11,6 +11,23 @@ type InquiriesApiResponse = {
   warning?: string;
 };
 
+type FollowUpFilter =
+  | "All"
+  | "High Priority"
+  | "Overdue"
+  | "New"
+  | "Waiting Reply"
+  | "Quotation Sent";
+
+const followUpFilters: FollowUpFilter[] = [
+  "All",
+  "High Priority",
+  "Overdue",
+  "New",
+  "Waiting Reply",
+  "Quotation Sent"
+];
+
 function formatCreatedAt(createdAt: string) {
   const date = new Date(createdAt);
 
@@ -63,13 +80,45 @@ function getLeadPriorityRank(priority?: string) {
   return rankMap[priority ?? ""] ?? 0;
 }
 
+function isOverdue(record: InquiryRecord) {
+  if (
+    !record.followUpDueAt ||
+    record.followUpStage === "Closed" ||
+    record.followUpStage === "Lost"
+  ) {
+    return false;
+  }
+
+  const dueAt = new Date(record.followUpDueAt).getTime();
+
+  return !Number.isNaN(dueAt) && dueAt < Date.now();
+}
+
 export default function AdminInquiriesPage() {
   const [records, setRecords] = useState<InquiryRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
-  const sortedRecords = [...records].sort((a, b) => {
-    const priorityDiff = getLeadPriorityRank(b.leadPriority) - getLeadPriorityRank(a.leadPriority);
+  const [followUpFilter, setFollowUpFilter] = useState<FollowUpFilter>("All");
+  const filteredRecords = records.filter((record) => {
+    if (followUpFilter === "High Priority") {
+      return record.followUpPriority === "High";
+    }
+
+    if (followUpFilter === "Overdue") {
+      return isOverdue(record);
+    }
+
+    if (followUpFilter === "New" || followUpFilter === "Waiting Reply" || followUpFilter === "Quotation Sent") {
+      return record.followUpStage === followUpFilter;
+    }
+
+    return true;
+  });
+  const sortedRecords = [...filteredRecords].sort((a, b) => {
+    const priorityDiff =
+      getLeadPriorityRank(b.followUpPriority ?? b.leadPriority) -
+      getLeadPriorityRank(a.followUpPriority ?? a.leadPriority);
 
     if (priorityDiff !== 0) {
       return priorityDiff;
@@ -129,6 +178,23 @@ export default function AdminInquiriesPage() {
           </p>
         </div>
 
+        <div className="mt-8 flex flex-wrap gap-2">
+          {followUpFilters.map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              onClick={() => setFollowUpFilter(filter)}
+              className={`rounded-md px-4 py-2 text-sm font-semibold ${
+                followUpFilter === filter
+                  ? "bg-brand-700 text-white"
+                  : "border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100"
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
         <section className="mt-10 rounded-lg border border-zinc-200 bg-white shadow-soft">
           {isLoading ? (
             <p className="p-6 text-sm font-medium text-zinc-600">Loading inquiry records...</p>
@@ -149,9 +215,15 @@ export default function AdminInquiriesPage() {
             </p>
           ) : null}
 
+          {!isLoading && !error && records.length > 0 && sortedRecords.length === 0 ? (
+            <p className="p-6 text-sm font-medium text-zinc-600">
+              No inquiries match the selected follow-up filter.
+            </p>
+          ) : null}
+
           {!isLoading && !error && sortedRecords.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="min-w-[1440px] w-full border-collapse text-left text-sm">
+              <table className="min-w-[1880px] w-full border-collapse text-left text-sm">
                 <thead className="bg-brand-50 text-brand-900">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Created At</th>
@@ -163,6 +235,10 @@ export default function AdminInquiriesPage() {
                     <th className="px-4 py-3 font-semibold">Customer Type</th>
                     <th className="px-4 py-3 font-semibold">Lead Score</th>
                     <th className="px-4 py-3 font-semibold">Lead Priority</th>
+                    <th className="px-4 py-3 font-semibold">Follow-up Priority</th>
+                    <th className="px-4 py-3 font-semibold">Follow-up Due At</th>
+                    <th className="px-4 py-3 font-semibold">Follow-up Stage</th>
+                    <th className="px-4 py-3 font-semibold">Next Action</th>
                     <th className="px-4 py-3 font-semibold">Purchase Intent</th>
                     <th className="px-4 py-3 font-semibold">Quotation Readiness</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
@@ -186,6 +262,19 @@ export default function AdminInquiriesPage() {
                           {record.leadPriority ?? "Low"}
                         </span>
                       </td>
+                      <td className="px-4 py-4">
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getLeadPriorityBadgeClass(record.followUpPriority)}`}>
+                          {record.followUpPriority ?? record.leadPriority ?? "Low"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={isOverdue(record) ? "font-semibold text-red-700" : "text-zinc-700"}>
+                          {record.followUpDueAt ? formatCreatedAt(record.followUpDueAt) : "Not scheduled"}
+                          {isOverdue(record) ? " (Overdue)" : ""}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-zinc-700">{record.followUpStage ?? "New"}</td>
+                      <td className="max-w-xs px-4 py-4 text-zinc-700">{record.nextAction ?? "Not specified"}</td>
                       <td className="px-4 py-4 text-zinc-700">{record.purchaseIntent}</td>
                       <td className="px-4 py-4">
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getReadinessBadgeClass(record.quotationReadiness)}`}>

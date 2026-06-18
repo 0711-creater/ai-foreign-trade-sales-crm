@@ -286,6 +286,39 @@ add column if not exists sales_strategy text;
 notify pgrst, 'reload schema';
 ```
 
+## V2.5 AI Follow-up Task System
+
+- AI Follow-up Task System
+- Follow-up due time generation
+- Follow-up priority
+- CRM follow-up stage management
+- Overdue lead detection
+- Sales next-action recommendation
+
+After lead scoring is complete, the server creates a deterministic follow-up plan. High-priority leads are scheduled within two hours, medium-priority leads within 24 hours, and low-priority leads within three days. The CRM supports follow-up filters, overdue detection, stage updates, last-contacted timestamps and editable next actions.
+
+Follow-up stages:
+
+```text
+New
+First Contact
+Quotation Sent
+Waiting Reply
+Negotiation
+Closed
+Lost
+```
+
+The Supabase `inquiries` table uses these follow-up columns:
+
+```text
+follow_up_due_at
+follow_up_stage
+last_contacted_at
+next_action
+follow_up_priority
+```
+
 ## Future Roadmap
 
 - Supabase / PostgreSQL database

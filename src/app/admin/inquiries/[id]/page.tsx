@@ -5,6 +5,10 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
+import {
+  followUpStages,
+  type FollowUpStage
+} from "@/lib/followUpPlanner";
 import type { InquiryRecord, InquiryRecordStatus } from "@/lib/inquiryStore";
 import type { QuotationResult, TradeTerm } from "@/lib/quotationCalculator";
 import type { QuotationReview } from "@/lib/quotationReviewer";
@@ -80,6 +84,22 @@ function formatDateTime(value?: string) {
   });
 }
 
+function toDateTimeLocalValue(value?: string) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const timezoneOffset = date.getTimezoneOffset() * 60 * 1000;
+
+  return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 16);
+}
+
 function getReadinessBadgeClass(readiness?: string) {
   return readiness === "Ready" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800";
 }
@@ -117,8 +137,13 @@ export default function InquiryDetailPage() {
   const [record, setRecord] = useState<InquiryRecord | null>(null);
   const [status, setStatus] = useState<InquiryRecordStatus>("New");
   const [followUpNote, setFollowUpNote] = useState("");
+  const [followUpStage, setFollowUpStage] = useState<FollowUpStage>("New");
+  const [followUpDueAt, setFollowUpDueAt] = useState("");
+  const [lastContactedAt, setLastContactedAt] = useState("");
+  const [nextAction, setNextAction] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingFollowUp, setIsSavingFollowUp] = useState(false);
   const [quotationForm, setQuotationForm] = useState<QuotationFormState>(() => getInitialQuotationForm());
   const [quotationResult, setQuotationResult] = useState<QuotationResponse | null>(null);
   const [isGeneratingQuotation, setIsGeneratingQuotation] = useState(false);
@@ -140,6 +165,10 @@ export default function InquiryDetailPage() {
       setRecord(data);
       setStatus(data.status);
       setFollowUpNote(data.followUpNote ?? "");
+      setFollowUpStage(data.followUpStage ?? "New");
+      setFollowUpDueAt(toDateTimeLocalValue(data.followUpDueAt));
+      setLastContactedAt(toDateTimeLocalValue(data.lastContactedAt));
+      setNextAction(data.nextAction ?? "");
       setQuotationForm((current) => ({
         ...current,
         quantity: current.quantity || parseQuantityText(data.quantity)
@@ -202,6 +231,42 @@ export default function InquiryDetailPage() {
     } catch (copyError) {
       console.error("Failed to copy text:", copyError);
       setError("Copy failed. Please copy the text manually.");
+    }
+  }
+
+  async function handleSaveFollowUpUpdate() {
+    setIsSavingFollowUp(true);
+    setMessage("");
+    setError("");
+
+    try {
+      const response = await fetch(`/api/inquiries/${params.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          followUpStage,
+          followUpDueAt: new Date(followUpDueAt).toISOString(),
+          lastContactedAt: lastContactedAt ? new Date(lastContactedAt).toISOString() : "",
+          nextAction,
+          updatedAt: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save follow-up update.");
+      }
+
+      const updatedRecord = (await response.json()) as InquiryRecord;
+
+      setRecord(updatedRecord);
+      setMessage("Follow-up update saved.");
+    } catch (requestError) {
+      console.error("Failed to save follow-up update:", requestError);
+      setError("Failed to save follow-up update. Please check the follow-up fields.");
+    } finally {
+      setIsSavingFollowUp(false);
     }
   }
 
@@ -332,6 +397,81 @@ export default function InquiryDetailPage() {
             </section>
 
             <aside className="space-y-6">
+              <Panel title="Follow-up Management">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-500">Follow-up Priority</p>
+                    <span className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getLeadPriorityBadgeClass(record.followUpPriority)}`}>
+                      {record.followUpPriority ?? record.leadPriority ?? "Low"}
+                    </span>
+                  </div>
+                  <InfoItem label="Current Due At" value={formatDateTime(record.followUpDueAt)} />
+                  <InfoItem label="Current Stage" value={record.followUpStage ?? "New"} />
+                  <InfoItem label="Last Contacted At" value={formatDateTime(record.lastContactedAt)} />
+                </div>
+                <InfoItem
+                  label="Current Next Action"
+                  value={record.nextAction ?? "No next action recorded."}
+                  className="mt-4"
+                />
+
+                <label className="mt-5 grid gap-2 text-sm font-medium text-zinc-700">
+                  Follow-up Stage
+                  <select
+                    value={followUpStage}
+                    onChange={(event) => setFollowUpStage(event.target.value as FollowUpStage)}
+                    className="rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                  >
+                    {followUpStages.map((stage) => (
+                      <option key={stage} value={stage}>
+                        {stage}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="mt-4 grid gap-2 text-sm font-medium text-zinc-700">
+                  Follow-up Due At
+                  <input
+                    type="datetime-local"
+                    required
+                    value={followUpDueAt}
+                    onChange={(event) => setFollowUpDueAt(event.target.value)}
+                    className="rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                  />
+                </label>
+
+                <label className="mt-4 grid gap-2 text-sm font-medium text-zinc-700">
+                  Last Contacted At
+                  <input
+                    type="datetime-local"
+                    value={lastContactedAt}
+                    onChange={(event) => setLastContactedAt(event.target.value)}
+                    className="rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                  />
+                </label>
+
+                <label className="mt-4 grid gap-2 text-sm font-medium text-zinc-700">
+                  Next Action
+                  <textarea
+                    rows={4}
+                    value={nextAction}
+                    onChange={(event) => setNextAction(event.target.value)}
+                    className="resize-none rounded-md border border-zinc-300 px-3 py-2 outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                    placeholder="Describe the next sales follow-up action."
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleSaveFollowUpUpdate}
+                  disabled={isSavingFollowUp || !followUpDueAt}
+                  className="btn-base mt-5 w-full bg-brand-600 text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-zinc-400"
+                >
+                  {isSavingFollowUp ? "Saving..." : "Save Follow-up Update"}
+                </button>
+              </Panel>
+
               <Panel title="Quotation Assistant">
                 {record.quotationReadiness === "Not Ready" ? (
                   <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm font-medium leading-6 text-amber-800">

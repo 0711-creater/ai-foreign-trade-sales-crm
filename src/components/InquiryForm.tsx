@@ -285,6 +285,35 @@ function AIAnalysisResult({ result }: { result: InquiryAnalysisResult }) {
             <ResultBlock title="Sales Strategy" content={result.salesStrategy} className="bg-white" />
           </div>
         </div>
+        <div className="rounded-lg border border-sky-200 bg-sky-50 p-4 md:col-span-2">
+          <p className="text-base font-bold text-sky-900">Follow-up Plan</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <ResultBlock
+              title="Follow-up Priority"
+              content={result.followUpPriority ?? result.leadPriority}
+              className="bg-white"
+            />
+            <ResultBlock
+              title="Follow-up Due At"
+              content={
+                result.followUpDueAt
+                  ? new Date(result.followUpDueAt).toLocaleString("en-US")
+                  : "Not specified"
+              }
+              className="bg-white"
+            />
+            <ResultBlock
+              title="Follow-up Stage"
+              content={result.followUpStage ?? "New"}
+              className="bg-white"
+            />
+            <ResultBlock
+              title="Next Action"
+              content={result.nextAction ?? result.recommendedNextAction}
+              className="bg-white"
+            />
+          </div>
+        </div>
         <div className="rounded-lg bg-brand-50 p-4">
           <p className="text-sm font-semibold text-brand-800">Quotation Readiness</p>
           <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${readinessClass}`}>

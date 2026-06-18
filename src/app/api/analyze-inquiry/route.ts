@@ -7,6 +7,7 @@ import {
   type InquiryData
 } from "@/lib/aiInquiryAnalyzer";
 import { sendInquiryNotification } from "@/lib/emailNotifier";
+import { generateFollowUpPlan } from "@/lib/followUpPlanner";
 import type { InquiryRecord } from "@/lib/inquiryStore";
 import { localJsonStorageWarning, saveInquiryRecord } from "@/lib/inquiryStore";
 
@@ -328,6 +329,14 @@ async function callDeepSeek(inquiryData: InquiryData, fallback: InquiryAnalysisR
 
 async function saveAnalyzedInquiry(inquiryData: InquiryData, analysisResult: InquiryAnalysisResult) {
   const recordId = randomUUID();
+  const followUpPlan = generateFollowUpPlan({
+    leadPriority: analysisResult.leadPriority,
+    leadScore: analysisResult.leadScore,
+    purchaseIntent: analysisResult.purchaseIntent,
+    quotationReadiness: analysisResult.quotationReadiness,
+    missingInformation: analysisResult.missingInformation,
+    requiredQuestions: analysisResult.requiredQuestions
+  });
   const inquiryRecord: InquiryRecord = {
     id: recordId,
     createdAt: new Date().toISOString(),
@@ -354,11 +363,19 @@ async function saveAnalyzedInquiry(inquiryData: InquiryData, analysisResult: Inq
     leadScoreReason: analysisResult.leadScoreReason,
     recommendedFollowUpTime: analysisResult.recommendedFollowUpTime,
     salesStrategy: analysisResult.salesStrategy,
+    ...followUpPlan,
     mode: analysisResult.mode,
     fallbackReason: analysisResult.fallbackReason,
     status: "New",
     source: "Website Inquiry"
   };
+
+  console.log("[FollowUpPlan]", {
+    followUpPriority: inquiryRecord.followUpPriority,
+    followUpDueAt: inquiryRecord.followUpDueAt,
+    followUpStage: inquiryRecord.followUpStage,
+    nextAction: inquiryRecord.nextAction
+  });
 
   try {
     const saveResult = await saveInquiryRecord(inquiryRecord);
@@ -372,6 +389,7 @@ async function saveAnalyzedInquiry(inquiryData: InquiryData, analysisResult: Inq
 
     return {
       ...saveResult,
+      ...followUpPlan,
       ...notificationResult
     };
   } catch (error) {
@@ -383,6 +401,7 @@ async function saveAnalyzedInquiry(inquiryData: InquiryData, analysisResult: Inq
       saved: false,
       saveWarning:
         error instanceof Error && error.message ? error.message : localJsonStorageWarning,
+      ...followUpPlan,
       notificationSent: false,
       notificationMode: "mock" as const,
       notificationWarning: "Inquiry was not saved, so notification was skipped."
