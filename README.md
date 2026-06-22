@@ -1,368 +1,456 @@
 # AI Foreign Trade Sales CRM
 
-A B2B independent website and AI-powered sales CRM for foreign trade inquiry analysis, quotation generation, and quotation review.
+An AI-powered B2B foreign trade sales CRM that helps sales teams analyze website inquiries, score leads, generate follow-up plans, manage quotations, and monitor sales pipeline metrics.
+
+## Project Links
+
+- [Online Demo](https://ai-foreign-trade-sales-crm.vercel.app)
+- [GitHub Repository](https://github.com/0711-creater/ai-foreign-trade-sales-crm)
+- Admin Dashboard: `/admin/dashboard`
+
+The Admin Dashboard is protected by Basic Auth. Demo credentials are not published in this repository or its documentation.
 
 ## Project Overview
 
-AI Foreign Trade Sales CRM is a portfolio MVP for the foreign trade B2B sales workflow. It combines a product-focused independent website with an AI-assisted CRM so sales teams can collect website inquiries, analyze buyer intent, identify missing quotation information, generate cost-based quotations, and review quotation risks before replying to buyers.
+AI Foreign Trade Sales CRM combines a customer-facing B2B product website with an internal AI-assisted sales workspace. Buyers can submit sourcing requirements from the website, while sales teams receive structured inquiry analysis, lead priority, quotation-readiness checks, follow-up tasks, quotation drafts, risk reviews, and pipeline visibility.
 
-The project uses mirror products as the demo industry, but the workflow can be adapted to other export categories such as gifts, beauty accessories, hardware, home products, and custom promotional products.
+The current demo uses mirror products, but the workflow can be adapted to export categories such as beauty accessories, gifts, home products, hardware, and private-label consumer goods.
 
-## Target Users
+## Problem It Solves
 
-- Foreign trade sales teams
-- B2B suppliers
-- Export companies
-- Importers / wholesalers management teams
-- Small factories building independent websites
+Foreign trade inquiries often arrive with incomplete specifications, unclear purchase intent, and different levels of commercial value. Sales teams must manually determine:
 
-## Core Features
+- Which leads deserve immediate attention
+- What information is missing before quotation
+- When and how to follow up
+- Whether a quotation email contains commercial risks
+- How the overall sales pipeline is progressing
 
-- B2B independent website
-- Product listing and product detail pages
-- Website inquiry form
-- DeepSeek API inquiry analysis
-- Mock fallback mode
-- Quotation readiness checker
-- Missing information detection
-- Required questions generation
-- Local JSON-based CRM
-- Inquiry status management
-- Follow-up notes
-- AI quotation assistant
-- Cost-based quotation calculation
-- AI quotation email generation
-- AI quotation reviewer
-- Risk item detection
-- Revised quotation email generation
+This project turns that fragmented process into a structured workflow from website inquiry to CRM follow-up and quotation review.
+
+## Key Features
+
+- **B2B Independent Website**: Product listing, product detail, customization, company, and contact pages
+- **AI Inquiry Analysis**: DeepSeek identifies buyer type, purchase intent, requirements, and suggested responses
+- **Lead Scoring**: Scores leads from 0-100 and classifies High, Medium, or Low priority
+- **Follow-up Task Planning**: Generates due time, priority, stage, and recommended next action
+- **Quotation Readiness Checker**: Detects missing specifications and generates buyer questions
+- **CRM Dashboard**: Displays pipeline KPIs, lead distributions, high-value leads, and overdue tasks
+- **Supabase Persistent Storage**: Stores inquiries, AI analysis, follow-up state, and quotation history
+- **Resend Email Notification**: Sends internal sales alerts with CRM detail links
+- **Admin Basic Auth Protection**: Protects admin pages and inquiry APIs
+- **Quotation Assistant**: Calculates cost-based unit price, margin, and total amount
+- **Quotation Reviewer**: Detects risky wording, missing terms, and quotation inconsistencies
+- **AI Email Reply Agent**: Classifies customer emails and generates human-reviewed reply drafts
+- **Resilient Fallbacks**: Keeps inquiry analysis and notifications usable when external providers are unavailable
 
 ## Tech Stack
 
-- Next.js
-- TypeScript
-- Tailwind CSS
-- DeepSeek API
-- Supabase
-- App Router API Routes
-- Local JSON storage
-- Mock fallback
-- Node.js fs/path server utilities
+| Layer | Technology |
+| --- | --- |
+| Frontend | Next.js, React, TypeScript, Tailwind CSS |
+| Backend | Next.js App Router API Routes, Node.js runtime |
+| AI | DeepSeek API with deterministic fallback analysis |
+| Database | Supabase PostgreSQL |
+| Email | Resend |
+| Authentication | HTTP Basic Auth through Next.js middleware |
+| Deployment | Vercel |
+| Source Control | GitHub |
 
-## System Workflow
+## System Architecture
 
-The system starts from a buyer inquiry on the website, runs AI analysis, checks quotation readiness, saves the lead into a local CRM, and supports sales follow-up, quotation generation, and quotation review.
+```mermaid
+flowchart LR
+  Buyer["B2B Buyer"] --> Website["Next.js Website"]
+  Website --> InquiryAPI["Inquiry Analysis API"]
+  InquiryAPI --> DeepSeek["DeepSeek API"]
+  InquiryAPI --> Rules["Fallback Rules and Lead Scoring"]
+  InquiryAPI --> Supabase["Supabase CRM Database"]
+  InquiryAPI --> Resend["Resend Sales Notification"]
+  Supabase --> Admin["Protected Admin CRM"]
+  Admin --> Dashboard["Pipeline Dashboard"]
+  Admin --> FollowUp["Follow-up Management"]
+  Admin --> Quote["Quotation Assistant"]
+  Quote --> Review["Quotation Reviewer"]
+```
+
+Key project directories:
+
+```text
+src/app                 Website, admin pages, and App Router routes
+src/app/api             Inquiry, CRM, and quotation APIs
+src/components          Reusable website and analysis UI
+src/data                Static product catalog
+src/lib                 AI rules, storage, metrics, quotation, and email logic
+screenshots             Portfolio screenshots
+storage                 Development fallback data directory
+```
+
+## Core User Flow
 
 ```mermaid
 flowchart TD
-  A["Website Inquiry"] --> B["AI Inquiry Analysis"]
-  B --> C["Quotation Readiness Check"]
-  C --> D["CRM Storage"]
-  D --> E["Sales Follow-up"]
-  E --> F["Quotation Generation"]
-  F --> G["Quotation Review"]
-```
-
-## Project Architecture
-
-- `src/app`: Next.js App Router pages, including website pages and admin CRM pages.
-- `src/app/api`: Server-side API Routes for inquiry analysis, CRM records, status updates, quotation generation, and quotation review.
-- `src/components`: Reusable UI components such as the inquiry form, navigation, footer, and product cards.
-- `src/lib`: Business logic utilities for AI inquiry analysis, local inquiry storage, quotation calculation, and quotation review.
-- `src/data`: Static product data used by the product listing and product detail pages.
-- `storage`: Local JSON storage folder for MVP inquiry records. Real customer data should not be committed.
-- `screenshots`: Recommended location for portfolio screenshots.
-
-## Environment Variables
-
-Create a local `.env.local` file:
-
-```bash
-DEEPSEEK_API_KEY=
-DEEPSEEK_BASE_URL=https://api.deepseek.com
-DEEPSEEK_MODEL=deepseek-v4-flash
-NEXT_PUBLIC_SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-ADMIN_USERNAME=
-ADMIN_PASSWORD=
-EMAIL_NOTIFICATION_ENABLED=false
-SALES_NOTIFICATION_EMAIL=
-FROM_EMAIL=
-APP_BASE_URL=
-RESEND_API_KEY=
-```
-
-Do not commit `.env.local` to GitHub.
-
-When `DEEPSEEK_API_KEY` is missing or the API call fails, the project automatically uses Mock fallback mode.
-
-`SUPABASE_SERVICE_ROLE_KEY` must only be used on the server side. Do not expose it in Client Components and do not create `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`.
-
-`ADMIN_USERNAME` and `ADMIN_PASSWORD` protect the CRM dashboard and inquiry API routes with Basic Auth. Do not commit real admin credentials to GitHub.
-
-`EMAIL_NOTIFICATION_ENABLED=false` keeps notification in Mock mode. For real Resend email notification, set `EMAIL_NOTIFICATION_ENABLED=true` and configure `RESEND_API_KEY`, `SALES_NOTIFICATION_EMAIL`, `FROM_EMAIL`, and `APP_BASE_URL`.
-
-## Local Development
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Run the development server:
-
-```bash
-npm run dev
-```
-
-Run lint:
-
-```bash
-npm run lint
-```
-
-Run production build:
-
-```bash
-npm run build
-```
-
-Main URLs:
-
-```text
-http://localhost:3000
-http://localhost:3000/products
-http://localhost:3000/contact
-http://localhost:3000/admin/inquiries
+  A["Buyer submits sourcing inquiry"] --> B["DeepSeek or fallback analysis"]
+  B --> C["Lead scoring and quotation readiness"]
+  C --> D["Automatic follow-up plan"]
+  D --> E["Save record to Supabase"]
+  E --> F["Send internal sales notification"]
+  F --> G["Sales team reviews CRM dashboard"]
+  G --> H["Update follow-up stage and next action"]
+  H --> I["Generate cost-based quotation"]
+  I --> J["Review quotation risks before sending"]
 ```
 
 ## Screenshots
 
-Current screenshot files:
+### Homepage
 
-- `screenshots/home-page.png`
-- `screenshots/products-page.png`
-- `screenshots/product-detail-page.png`
-- `screenshots/contact-form-page.png`
+![Homepage](screenshots/home-page.png)
 
-Recommended screenshots for portfolio completion:
+### Contact Form
 
-- `screenshots/ai-analysis-result-v1.3.png`
-- `screenshots/admin-inquiries-page.png`
-- `screenshots/inquiry-detail-page.png`
-- `screenshots/quotation-assistant.png`
-- `screenshots/quotation-reviewer.png`
+![Contact Form](screenshots/contact-form-page.png)
 
-## MVP Limitations
+### AI Analysis Result
 
-- Local JSON storage is for MVP only.
-- No real admin authentication yet.
-- Not suitable for production deployment as-is.
-- Use PostgreSQL / Supabase / MySQL / MongoDB for production.
-- Add admin authentication before deployment.
+![AI Analysis Result](screenshots/ai-analysis-result.png)
 
-## Vercel Deployment Notes
+### CRM Inquiries List
 
-- Vercel deployment can display the website and AI analysis.
-- For Vercel production deployment, configure `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_USERNAME` and `ADMIN_PASSWORD`.
-- Local JSON storage is not suitable for production or persistent storage on Vercel.
-- Serverless functions should not be used as a reliable file-based CRM database.
-- If Supabase is not configured, the `/admin/inquiries` page can still open with an empty state or local JSON fallback warning.
-- For production CRM data persistence, use Supabase / PostgreSQL / MySQL / MongoDB.
+![CRM Inquiries List](screenshots/admin-inquiries-page.png)
 
-## V2.0 Supabase Database Integration
+### Inquiry Detail Page
 
-- Supabase database integration
-- Persistent inquiry storage
-- Production-ready CRM data source
-- Local JSON fallback retained for development
+![Inquiry Detail Page](screenshots/inquiry-detail-page.png)
 
-The CRM storage layer now uses Supabase first when the following environment variables are configured:
+### Quotation Assistant
+
+![Quotation Assistant](screenshots/quotation-assistant.png)
+
+### Follow-up Management
+
+![Follow-up Management](screenshots/follow-up-management.png)
+
+### CRM Dashboard
+
+![CRM Dashboard](screenshots/crm-dashboard.png)
+
+Additional screenshots:
+
+- [Product listing](screenshots/products-page.png)
+- [Product detail](screenshots/product-detail-page.png)
+- [Quotation reviewer](screenshots/quotation-reviewer.png)
+
+## Environment Variables
+
+Create `.env.local` and provide the required server credentials. Do not commit this file.
 
 ```bash
+DEEPSEEK_API_KEY=
+DEEPSEEK_BASE_URL=
+DEEPSEEK_MODEL=
+
 NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
+
+RESEND_API_KEY=
+EMAIL_NOTIFICATION_ENABLED=
+SALES_NOTIFICATION_EMAIL=
+FROM_EMAIL=
+APP_BASE_URL=
+
+ADMIN_USERNAME=
+ADMIN_PASSWORD=
 ```
 
-When Supabase is unavailable or not configured, the project falls back to local JSON storage for local development only. On Vercel, use Supabase as the persistent CRM data source.
-
-## V2.1 Admin Access Protection
-
-- Admin access protection
-- Basic Auth for CRM dashboard
-- Protected inquiry API routes
-- Public contact form remains available
-
-Protected paths:
-
-```text
-/admin
-/admin/:path*
-/api/inquiries
-/api/inquiries/:path*
-```
-
-Public paths remain available:
-
-```text
-/
-/products
-/contact
-/api/analyze-inquiry
-```
-
-For Vercel production deployment, add these variables in Vercel Settings -> Environment Variables:
+Recommended defaults:
 
 ```bash
-ADMIN_USERNAME=your_admin_username
-ADMIN_PASSWORD=your_admin_password
-```
-
-Do not store real admin credentials in the repository. The public website and contact inquiry form remain accessible without Basic Auth.
-
-## V2.2 Inquiry Email Notification
-
-- Inquiry email notification
-- Internal sales alert
-- CRM detail link in notification
-- Mock notification mode
-- Email service extension-ready design
-
-After a website inquiry is analyzed and saved, the server generates an internal sales notification payload. By default, the current version uses Mock notification mode and logs the notification summary on the server.
-
-Current version supports mock notification by default. Real email provider integration is available through Resend, while the notification module still keeps Mock fallback when email sending is disabled or fails.
-
-Notification environment variables:
-
-```bash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-flash
 EMAIL_NOTIFICATION_ENABLED=false
-SALES_NOTIFICATION_EMAIL=
-FROM_EMAIL=
-APP_BASE_URL=
-RESEND_API_KEY=
+APP_BASE_URL=http://localhost:3000
 ```
 
-Email notification failure must not block the website inquiry submission flow.
-
-## V2.3 Real Email Notification with Resend
-
-- Resend email notification
-- Real internal sales alert
-- CRM detail link in email
-- Mock fallback retained
-
-For real email notification, configure these environment variables on the server side:
+## Local Development
 
 ```bash
-RESEND_API_KEY=
-EMAIL_NOTIFICATION_ENABLED=true
-SALES_NOTIFICATION_EMAIL=
-FROM_EMAIL=
-APP_BASE_URL=
+npm install
+npm run dev
 ```
 
-`RESEND_API_KEY` must not be exposed in Client Components or committed to GitHub. If Resend is not configured, disabled, or fails to send, the inquiry submission, AI analysis, Supabase saving, and frontend result display continue normally with Mock fallback.
+Open:
 
-## V2.4 AI Lead Scoring & Priority System
+```text
+Website:       http://localhost:3000
+Contact:       http://localhost:3000/contact
+CRM records:   http://localhost:3000/admin/inquiries
+CRM dashboard: http://localhost:3000/admin/dashboard
+Email agent:   http://localhost:3000/admin/email-agent
+```
 
-- AI Lead Scoring
-- Lead Priority Classification
-- Sales follow-up timing recommendation
-- Lead scoring reason
-- CRM lead prioritization
+Quality checks:
 
-After each inquiry is analyzed, the system assigns a lead score from 0 to 100 based on quantity, purchase intent, customer type, quotation readiness, message quality and urgency. CRM records can then be sorted by lead priority so sales teams can follow up high-value buyers first.
+```bash
+npm run lint
+npm run build
+```
 
-For Supabase storage, add these columns in Supabase SQL Editor:
+## Deployment
+
+The project is designed for Vercel deployment.
+
+1. Push the repository to GitHub.
+2. Import the repository into Vercel.
+3. Configure all required environment variables in Vercel Project Settings.
+4. Configure the Supabase `inquiries` table and service-role access.
+5. Verify the Resend sender domain before enabling real email notifications.
+6. Set `APP_BASE_URL` to the production domain.
+7. Redeploy after changing environment variables.
+
+Supabase is the persistent production data source. The file-based development fallback is retained only for local resilience and should not be treated as production storage.
+
+## Security Notes
+
+- Admin routes under `/admin/:path*` are protected by Basic Auth.
+- Inquiry management APIs under `/api/inquiries/:path*` are also protected.
+- `SUPABASE_SERVICE_ROLE_KEY` is imported only by server-side modules.
+- DeepSeek, Supabase, Resend, and admin credentials are managed through environment variables.
+- The public contact form calls a server API and never receives secret keys.
+- `.env`, `.env.local`, `.env*.local`, and customer inquiry data are excluded from Git.
+- Basic Auth is appropriate for this portfolio deployment; production teams should adopt identity-based authentication, session management, role-based access control, and audit logs.
+
+## V2.8 AI Email Reply Agent
+
+- AI Email Reply Agent
+- Email intent classification
+- Reply draft generation
+- WhatsApp follow-up message
+- Human-reviewed email workflow
+- Email reply draft storage
+
+The protected `/admin/email-agent` workspace accepts a customer email and a sales reply goal, then generates a structured English reply draft through DeepSeek or deterministic fallback logic. The draft includes intent classification, a customer summary, missing information, reply subject, reply body, WhatsApp follow-up, next action and risk notes.
+
+Drafts are saved to the Supabase `email_reply_drafts` table when configured. The module only creates drafts for human review and never sends customer-facing email automatically.
+
+Create the table in Supabase SQL Editor:
 
 ```sql
-alter table inquiries
-add column if not exists lead_score integer,
-add column if not exists lead_priority text,
-add column if not exists lead_score_reason text,
-add column if not exists recommended_follow_up_time text,
-add column if not exists sales_strategy text;
+create table if not exists email_reply_drafts (
+  id text primary key,
+  created_at timestamptz default now(),
+  updated_at timestamptz,
+  customer_name text,
+  customer_email text,
+  company text,
+  country text,
+  product text,
+  original_email text,
+  reply_goal text,
+  email_intent text,
+  customer_summary text,
+  missing_information jsonb,
+  suggested_reply_subject text,
+  suggested_reply_email text,
+  whatsapp_follow_up_message text,
+  next_action text,
+  risk_notes text,
+  mode text
+);
 
 notify pgrst, 'reload schema';
 ```
 
-## V2.5 AI Follow-up Task System
+## V2.9 Email Reply Draft Detail Page
 
-- AI Follow-up Task System
-- Follow-up due time generation
-- Follow-up priority
-- CRM follow-up stage management
-- Overdue lead detection
-- Sales next-action recommendation
+- Email Reply Draft Detail Page
+- Human review workflow
+- Editable AI reply draft
+- Draft status management
+- Internal note support
 
-After lead scoring is complete, the server creates a deterministic follow-up plan. High-priority leads are scheduled within two hours, medium-priority leads within 24 hours, and low-priority leads within three days. The CRM supports follow-up filters, overdue detection, stage updates, last-contacted timestamps and editable next actions.
-
-Follow-up stages:
+Each saved draft can be opened at `/admin/email-agent/[id]`. The protected detail page displays the customer context, original email, AI analysis and full reply draft. Sales users can edit the subject, email reply, WhatsApp message and next action, then manage the draft through these statuses:
 
 ```text
-New
-First Contact
-Quotation Sent
-Waiting Reply
-Negotiation
-Closed
-Lost
+Draft
+Reviewed
+Ready to Send
+Sent
+Archived
 ```
 
-The Supabase `inquiries` table uses these follow-up columns:
+The workflow only stores and reviews drafts. It does not automatically send customer-facing email.
+
+Upgrade the Supabase table in SQL Editor:
+
+```sql
+alter table email_reply_drafts
+add column if not exists draft_status text default 'Draft',
+add column if not exists reviewed_at timestamptz,
+add column if not exists reviewed_by text,
+add column if not exists internal_note text;
+
+notify pgrst, 'reload schema';
+```
+
+## V3.0 Email Reply Draft Pipeline Dashboard
+
+- Email Reply Draft Pipeline Dashboard
+- Draft status analytics
+- Ready-to-send draft management
+- High-risk draft monitoring
+- Human-reviewed email workflow
+
+The protected `/admin/email-agent/dashboard` page summarizes the email reply draft pipeline. It displays total draft counts, status distribution, recent drafts, drafts marked Ready to Send, and drafts that contain risk notes requiring human verification.
+
+The dashboard uses deterministic metrics from stored draft records and does not call AI or send customer-facing email.
+
+## V3.1 Email Reply Draft Manual Send Workflow
+
+- Manual email sending workflow
+- Human confirmation before sending
+- Ready-to-send validation
+- Resend email delivery
+- Send status tracking
+- Send error logging
+
+The protected draft detail page only displays the Send Email action after the saved draft status is `Ready to Send`. A backend user must click the button and accept a second confirmation before the server sends the reviewed draft through Resend.
+
+The send API re-reads the stored draft and validates the status, recipient, subject and email body. AI never triggers customer-facing email automatically. Successful and failed delivery attempts are recorded on the draft.
+
+Upgrade the Supabase table in SQL Editor:
+
+```sql
+alter table email_reply_drafts
+add column if not exists sent_at timestamptz,
+add column if not exists sent_by text,
+add column if not exists send_status text default 'Not Sent',
+add column if not exists send_error text,
+add column if not exists resend_message_id text;
+
+notify pgrst, 'reload schema';
+```
+
+## V3.2 Email Send Audit Log
+
+- Email send audit log
+- Send attempt tracking
+- Success and failure logging
+- Resend provider message ID tracking
+- Draft-level send history
+
+Every manual email delivery attempt creates a separate audit record without replacing previous history. The protected `/admin/email-agent/send-logs` page summarizes total attempts, successful sends, failed sends and delivery success rate. Each draft detail page also displays its own send history.
+
+Create the audit table in Supabase SQL Editor:
+
+```sql
+create table if not exists email_send_logs (
+  id text primary key,
+  created_at timestamptz default now(),
+  draft_id text,
+  customer_email text,
+  customer_name text,
+  company text,
+  product text,
+  subject text,
+  sent_by text,
+  send_status text,
+  resend_message_id text,
+  error_message text,
+  provider text default 'resend'
+);
+
+notify pgrst, 'reload schema';
+```
+
+## V3.3 AI Email Reply Quality Reviewer
+
+- AI Email Reply Quality Reviewer
+- Review score
+- Risk detection
+- Missing point detection
+- Human-in-the-loop quality gate
+- Pre-send AI review workflow
+
+The protected email draft detail page can run a quality review before manual sending. DeepSeek evaluates whether the reply addresses the buyer's request, asks for missing specifications, uses professional export-sales English, and avoids unsupported price, delivery, certification, quality, or capacity commitments.
+
+Review scores are normalized into three statuses:
 
 ```text
-follow_up_due_at
-follow_up_stage
-last_contacted_at
-next_action
-follow_up_priority
+90-100: Pass
+70-89: Needs Revision
+0-69:  High Risk
 ```
 
-## V2.6 CRM Pipeline Dashboard
+The reviewer falls back to deterministic local rules when DeepSeek is unavailable. It never sends email or automatically changes a draft to Ready to Send. A human sales user remains responsible for editing, approving, and sending the final reply.
 
-- CRM Pipeline Dashboard
-- Sales KPI overview
-- Lead priority distribution
-- Follow-up overdue detection
-- Recent high-value leads
-- Sales management dashboard
+Upgrade the Supabase table in SQL Editor:
 
-The protected `/admin/dashboard` page reads CRM records through the server-side storage layer and summarizes the sales pipeline without exposing Supabase credentials to the browser.
+```sql
+alter table email_reply_drafts
+add column if not exists review_score integer,
+add column if not exists review_status text default 'Not Reviewed',
+add column if not exists review_summary text,
+add column if not exists review_risks jsonb,
+add column if not exists review_suggestions jsonb,
+add column if not exists review_missing_points jsonb,
+add column if not exists reviewed_by_ai_at timestamptz,
+add column if not exists review_mode text;
 
-Dashboard coverage:
+notify pgrst, 'reload schema';
+```
 
-- Total inquiries, new leads and high-priority leads
-- Overdue follow-ups
-- Quotation ready and not-ready counts
-- Average lead score
-- Lead priority, follow-up stage and purchase intent distributions
-- Recent high-value lead table
-- Overdue follow-up table
+## Future Improvements
 
-## Future Roadmap
-
-- Supabase / PostgreSQL database
-- Admin login authentication
-- Email notification
-- Customer background research agent
-- AI follow-up reminder
+- Supabase Auth or Auth.js admin authentication
+- Role-based permissions for sales managers and representatives
+- Customer and company relationship records
+- Scheduled follow-up reminders and background jobs
+- Email reply sending and conversation history
 - Quote approval workflow
-- Deployment to Vercel
+- Product and price-list management
+- CRM search, pagination, export, and reporting
+- Automated tests for business rules and API routes
+- Observability, audit logs, and error monitoring
 
 ## Interview Talking Points
 
-What this project demonstrates:
+For resume-ready project descriptions, recruitment platform copy, a three-minute demo script, and an extended interview Q&A library, see:
 
-- AI application engineering
-- API integration
-- Prompt engineering
-- B2B workflow automation
-- CRM workflow design
-- Cost-based quotation logic
-- AI output risk control
-- Full-stack project delivery
+### [Career & Interview Package](docs/career-package.md)
 
-## Portfolio Notes
+For a focused case study covering the AI email drafting, quality review, manual sending, and audit workflow, see:
 
-This project is designed as a GitHub portfolio project for AI application development and frontend/full-stack engineering. It demonstrates how a standard B2B independent website can evolve into an AI-assisted sales workflow covering lead capture, buyer analysis, quotation preparation, and quotation risk control.
+### [AI Email Reply Agent Portfolio](docs/email-agent-portfolio.md)
+
+### 1. Why this project was built
+
+It demonstrates how AI can improve a real B2B sales workflow rather than operating as an isolated chatbot. The product connects lead capture, qualification, follow-up, quotation, and management reporting.
+
+### 2. How AI analysis is triggered
+
+The public inquiry form posts to a Next.js server route. The route validates input, requests structured JSON from DeepSeek, validates the result, and uses deterministic fallback analysis when the provider is unavailable.
+
+### 3. How lead scoring works
+
+Lead score combines quantity, customer type, purchase intent, quotation readiness, message quality, and urgency. Priority is derived from fixed thresholds so High, Medium, and Low classifications remain consistent.
+
+### 4. How follow-up tasks are generated
+
+A deterministic planner converts lead priority into a due time, follow-up priority, initial stage, and next action. High-priority leads are scheduled sooner than lower-priority leads.
+
+### 5. How Supabase is used
+
+The server-side storage layer maps application camelCase fields to PostgreSQL snake_case columns. It centralizes create, read, update, quotation-history, and fallback behavior without exposing the service-role key.
+
+### 6. How email notification works
+
+After analysis and persistence, the server builds an internal sales notification containing buyer information, AI analysis, lead score, follow-up plan, and a protected CRM link. Resend handles delivery, with non-blocking fallback behavior.
+
+### 7. How admin security is handled
+
+Next.js middleware applies Basic Auth to admin pages and inquiry management APIs. Public product and contact pages remain accessible, while sensitive credentials stay server-side.
+
+### 8. How this project can be extended for real business use
+
+The current architecture can evolve into a multi-user CRM by adding identity authentication, role-based access, customer entities, scheduled jobs, communication history, approval workflows, analytics, and integration with ERP or shipping systems.
